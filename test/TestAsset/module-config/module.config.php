@@ -46,6 +46,28 @@ return [
                     ],
                 ],
             ],
+            'test.rpc.my-complex-rpc' => [
+                'type' => 'Segment',
+                'options' => [
+                    'route' => '/my-complex-rpc',
+                    'defaults' => [
+                        'controller' => 'Test\\V1\\Rpc\\MyComplexRpc\\Controller',
+                        'action' => 'myComplexRpc',
+                    ],
+                    'child_routes' => [
+                        'test.rpc.my-complex-rpc.child' => [
+                            'type' => 'Method',
+                            'options' => [
+                                'verb' => 'post',
+                                'defaults' => [
+                                    'controller' => 'Test\\V1\\Rpc\\MyComplexRpc\\Controller',
+                                    'action' => 'myComplexRpcChild',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'test.rpc.ping' => [
                 'type' => 'Segment',
                 'options' => [
