@@ -193,7 +193,13 @@ class ApiFactory
             $service->setDescription($docsArray[$serviceClassName]['description']);
         }
 
-        $route = $this->config['router']['routes'][$serviceData['route_name']]['options']['route'];
+        $route = $this->config['router']['routes'][$serviceData['route_name']]['options']['route'] ?? null;
+        if (!$route) {
+            foreach ($this->config['router']['routes'] as $routeConfig) {
+                $route = $routeConfig['child_routes'][$serviceData['route_name']]['options']['route'] ?? null;
+            }
+        }
+
         $service->setRoute(str_replace('[/v:version]', '', $route)); // remove internal version prefix, hacky
         if ($isRpc) {
             $hasSegments = $this->hasOptionalSegments($route);
