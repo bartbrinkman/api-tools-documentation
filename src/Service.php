@@ -69,6 +69,16 @@ class Service implements IteratorAggregate
     protected $fields = [];
 
     /**
+     * @var string
+     */
+    protected $operationsName;
+
+    /**
+     * @var string
+     */
+    protected $entityOperationsName;
+
+    /**
      * @param \Laminas\ApiTools\Documentation\Api $api
      */
     public function setApi($api)
@@ -245,6 +255,38 @@ class Service implements IteratorAggregate
     }
 
     /**
+     * @param string $operationsName
+     */
+    public function setOperationsName($operationsName)
+    {
+        $this->operationsName = $operationsName;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOperationsName()
+    {
+        return $this->operationsName;
+    }
+
+    /**
+     * @param string $entityOperationsName
+     */
+    public function setEntityOperationsName($entityOperationsName)
+    {
+        $this->entityOperationsName = $entityOperationsName;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEntityOperationsName()
+    {
+        return $this->entityOperationsName;
+    }
+
+    /**
      * Cast object to array
      *
      * @return array
@@ -259,6 +301,8 @@ class Service implements IteratorAggregate
             'request_accept_types' => $this->requestAcceptTypes,
             'request_content_types' => $this->requestContentTypes,
             'response_content_types' => $this->requestAcceptTypes,
+            'operations_name' => $this->operationsName,
+            'entity_operations_name' => $this->entityOperationsName,
         ];
 
         $fields = [];

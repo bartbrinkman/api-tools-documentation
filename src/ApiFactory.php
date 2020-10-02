@@ -222,6 +222,14 @@ class ApiFactory
             }
         }
 
+        if (isset($docsArray[$serviceClassName]['collection']['name'])) {
+            $service->setOperationsName($docsArray[$serviceClassName]['collection']['name']);
+        }
+
+        if (isset($docsArray[$serviceClassName]['entity']['name'])) {
+            $service->setEntityOperationsName($docsArray[$serviceClassName]['entity']['name']);
+        }
+
         $baseOperationData = (isset($serviceData['collection_http_methods']))
             ? $serviceData['collection_http_methods']
             : $serviceData['http_methods'];
