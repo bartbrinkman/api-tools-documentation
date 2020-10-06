@@ -13,6 +13,7 @@ use Laminas\ApiTools\Provider\ApiToolsProviderInterface;
 use Laminas\InputFilter\CollectionInputFilter;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ModuleManager\ModuleManager;
+use Doctrine\ORM\EntityManagerInterface;
 
 class ApiFactory
 {
@@ -31,6 +32,8 @@ class ApiFactory
      */
     protected $configModuleUtils;
 
+    protected $entityManager;
+
     /**
      * @var array
      */
@@ -41,11 +44,12 @@ class ApiFactory
      * @param array $config
      * @param ConfigModuleUtils $configModuleUtils
      */
-    public function __construct(ModuleManager $moduleManager, $config, ConfigModuleUtils $configModuleUtils)
+    public function __construct(ModuleManager $moduleManager, $config, ConfigModuleUtils $configModuleUtils, EntityManagerInterface $entityManager)
     {
         $this->moduleManager = $moduleManager;
         $this->config = $config;
         $this->configModuleUtils = $configModuleUtils;
+        $this->entityManager = $entityManager;
     }
 
     /**
@@ -200,7 +204,7 @@ class ApiFactory
             }
         }
 
-        $service->setRoute(str_replace('[/v:version]', '', $route)); // remove internal version prefix, hacky
+        $service->setRoute(str_replace('[/v:version]', $api->getVersion() >= 2 ? '/v'.$api->getVersion() : '', $route)); // remove internal version prefix, hacky
         if ($isRpc) {
             $hasSegments = $this->hasOptionalSegments($route);
         }
@@ -299,6 +303,16 @@ class ApiFactory
             }
 
             $ops[] = $op;
+        }
+
+        if (isset($serviceData['entity_class'])) {
+            $metadata = $this->entityManager->getClassMetadata($serviceData['entity_class']);
+            foreach ($metadata->fieldMappings as $fieldMapping) {
+                $field = new Field();
+                $field->setName($fieldMapping['fieldName']);
+                $field->setFieldType($fieldMapping['type']);
+                $fields['doctrine'][] = $field;
+            }
         }
 
         $service->setFields($fields);
@@ -431,6 +445,25 @@ class ApiFactory
         $required = isset($fieldData['required']) ? (bool) $fieldData['required'] : false;
         $field->setRequired($required);
 
+        if (isset($fieldData['validators'])) {
+            foreach ($fieldData['validators'] as $validator) {
+                if ($validator['name'] === 'Becky\Validator\ExistentialQuantification') {
+                    $field->setDescription($field->getDescription().' Can also be `null`. '.PHP_EOL.'        + id (int)');
+                }
+                if ($validator['name'] === 'Becky\Validator\AssertSuperadmin') {
+                    $field->setDescription($field->getDescription().' This is an internal value and cannot be changed.');
+                }
+                if ($validator['name'] === \Laminas\Validator\StringLength::class) {
+                    if (isset($validator['options']['max'])) {
+                        $field->setDescription($field->getDescription().sprintf(' Maximum of %s characters.', $validator['options']['max']));
+                    }
+                }
+                if ($validator['name'] === 'Becky\Validator\IsBoolean') {
+                    $field->setFieldType('bool');
+                }
+            }
+        }
+
         return $field;
     }
 
@@ -502,10 +535,7 @@ class ApiFactory
 
     protected function getStatusCodes($httpMethod, $hasOptionalSegments, $hasValidation, $requiresAuthorization)
     {
-        $statusCodes = [
-            ['code' => '406', 'message' => 'Not Acceptable'],
-            ['code' => '415', 'message' => 'Unsupported Media Type'],
-        ];
+        $statusCodes = [];
 
         switch ($httpMethod) {
             case 'GET':
@@ -527,6 +557,7 @@ class ApiFactory
                 }
                 if ($hasValidation) {
                     array_push($statusCodes, ['code' => '400', 'message' => 'Client Error']);
+                    array_push($statusCodes, ['code' => '415', 'message' => 'Unsupported Media Type']);
                     array_push($statusCodes, ['code' => '422', 'message' => 'Unprocessable Entity']);
                 }
                 break;
@@ -538,6 +569,7 @@ class ApiFactory
                 }
                 if ($hasValidation) {
                     array_push($statusCodes, ['code' => '400', 'message' => 'Client Error']);
+                    array_push($statusCodes, ['code' => '415', 'message' => 'Unsupported Media Type']);
                     array_push($statusCodes, ['code' => '422', 'message' => 'Unprocessable Entity']);
                 }
                 break;
@@ -547,6 +579,8 @@ class ApiFactory
             array_push($statusCodes, ['code' => '401', 'message' => 'Unauthorized']);
             array_push($statusCodes, ['code' => '403', 'message' => 'Forbidden']);
         }
+
+        array_push($statusCodes, ['code' => '406', 'message' => 'Not Acceptable']);
 
         return $statusCodes;
     }

@@ -11,6 +11,7 @@ namespace Laminas\ApiTools\Documentation\Factory;
 use Interop\Container\ContainerInterface;
 use Laminas\ApiTools\Configuration\ModuleUtils;
 use Laminas\ApiTools\Documentation\ApiFactory;
+use Doctrine\ORM\EntityManagerInterface;
 
 class ApiFactoryFactory
 {
@@ -23,7 +24,8 @@ class ApiFactoryFactory
         return new ApiFactory(
             $container->get('ModuleManager'),
             $container->get('config'),
-            $container->get(ModuleUtils::class)
+            $container->get(ModuleUtils::class),
+            $container->get(EntityManagerInterface::class)
         );
     }
 }
