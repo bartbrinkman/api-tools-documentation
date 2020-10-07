@@ -21,6 +21,11 @@ class Api implements IteratorAggregate
     protected $name;
 
     /**
+     * @var string
+     */
+    protected $description;
+
+    /**
      * @var int|string
      */
     protected $version = 1;
@@ -49,6 +54,22 @@ class Api implements IteratorAggregate
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setDescription($description)
+    {
+        $this->description = $description;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
     }
 
     /**

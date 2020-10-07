@@ -130,6 +130,14 @@ class ApiFactory
             }
         }
 
+        $docsArray = $this->getDocumentationConfig($api->getName());
+        if (isset($docsArray['name'])) {
+            $api->setName($docsArray['name']);
+        }
+        if (isset($docsArray['description'])) {
+            $api->setDescription($docsArray['description']);
+        }
+
         return $api;
     }
 
