@@ -29,6 +29,11 @@ class Service implements IteratorAggregate
     protected $description;
 
     /**
+     * @var array
+     */
+    protected $tags = [];
+
+    /**
      * @var string
      */
     protected $route;
@@ -124,6 +129,22 @@ class Service implements IteratorAggregate
     public function getDescription()
     {
         return $this->description;
+    }
+
+    /**
+     * @param array $tags
+     */
+    public function setTags(array $tags)
+    {
+        $this->tags = $tags;
+    }
+
+    /**
+     * @return array
+     */
+    public function getTags()
+    {
+        return $this->tags;
     }
 
     /**
@@ -296,6 +317,7 @@ class Service implements IteratorAggregate
         $output = [
             'name' => $this->name,
             'description' => $this->description,
+            'tags' => $this->tags,
             'route' => $this->route,
             'route_identifier_name' => $this->routeIdentifierName,
             'request_accept_types' => $this->requestAcceptTypes,

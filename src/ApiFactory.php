@@ -14,6 +14,7 @@ use Laminas\InputFilter\CollectionInputFilter;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ModuleManager\ModuleManager;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 
 class ApiFactory
 {
@@ -204,6 +205,13 @@ class ApiFactory
         if (isset($docsArray[$serviceClassName]['description'])) {
             $service->setDescription($docsArray[$serviceClassName]['description']);
         }
+        if (isset($docsArray[$serviceClassName]['tags'])) {
+            $tags = $docsArray[$serviceClassName]['tags'];
+            if (!is_array($tags)) {
+                $tags = array_map('trim', explode(',', $tags));
+            }
+            $service->setTags($tags);
+        }
 
         $route = $this->config['router']['routes'][$serviceData['route_name']]['options']['route'] ?? null;
         if (!$route) {
@@ -319,6 +327,18 @@ class ApiFactory
                 $field = new Field();
                 $field->setName($fieldMapping['fieldName']);
                 $field->setFieldType($fieldMapping['type']);
+                $fields['doctrine'][] = $field;
+            }
+            foreach ($metadata->associationMappings as $associationMapping) {
+                if (!in_array($associationMapping['type'], [
+                    ClassMetadataInfo::ONE_TO_ONE,
+                    ClassMetadataInfo::MANY_TO_ONE,
+                ])) {
+                    continue;
+                }
+                $field = new Field();
+                $field->setName($associationMapping['fieldName']);
+                $field->setFieldType('object');
                 $fields['doctrine'][] = $field;
             }
         }
@@ -456,7 +476,7 @@ class ApiFactory
         if (isset($fieldData['validators'])) {
             foreach ($fieldData['validators'] as $validator) {
                 if ($validator['name'] === 'Becky\Validator\ExistentialQuantification') {
-                    $field->setDescription($field->getDescription().' Can also be `null`. '.PHP_EOL.'        + id (int)');
+                    $field->setDescription($field->getDescription().' Can also be `null`. '.PHP_EOL.'        + id (number)');
                 }
                 if ($validator['name'] === 'Becky\Validator\AssertSuperadmin') {
                     $field->setDescription($field->getDescription().' This is an internal value and cannot be changed.');
