@@ -34,6 +34,11 @@ class Service implements IteratorAggregate
     protected $tags = [];
 
     /**
+     * @var array
+     */
+    protected $listeners = [];
+
+    /**
      * @var string
      */
     protected $route;
@@ -145,6 +150,22 @@ class Service implements IteratorAggregate
     public function getTags()
     {
         return $this->tags;
+    }
+
+    /**
+     * @param array $listeners
+     */
+    public function setListeners(array $listeners)
+    {
+        $this->listeners = $listeners;
+    }
+
+    /**
+     * @return array
+     */
+    public function getListeners()
+    {
+        return $this->listeners;
     }
 
     /**

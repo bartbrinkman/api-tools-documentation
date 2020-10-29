@@ -15,6 +15,8 @@ use Laminas\InputFilter\InputFilterInterface;
 use Laminas\ModuleManager\ModuleManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class ApiFactory
 {
@@ -39,6 +41,8 @@ class ApiFactory
      * @var array
      */
     protected $docs = [];
+
+    protected $listenerCache = [];
 
     /**
      * @param ModuleManager $moduleManager
@@ -205,6 +209,70 @@ class ApiFactory
         if (isset($docsArray[$serviceClassName]['description'])) {
             $service->setDescription($docsArray[$serviceClassName]['description']);
         }
+
+        if (!$this->listenerCache) {
+            $results = [];
+            $directoryIterator = new RecursiveDirectoryIterator(APPLICATION_PATH);
+            $iterator = new RecursiveIteratorIterator($directoryIterator, RecursiveIteratorIterator::SELF_FIRST);
+            foreach ($iterator as $file) {
+                if ($file->isDir()) {
+                    continue;
+                }
+                if (strstr($file->getPath(), 'vendor/')) {
+                    continue;
+                }
+                if (!\preg_match('/\.php$/i', $file->getFileName())) {
+                    continue;
+                }
+
+                $results[] = $file->getPathName();
+            }
+
+            $collection = [];
+            foreach ($results as $filepath) {
+                $tokens = \token_get_all(\file_get_contents($filepath));
+                foreach ($tokens as $index => $token) {
+                    if (!isset($token[1])) {
+                        continue;
+                    }
+                    if ($token[1] === 'attach') {
+                        foreach (array_slice($tokens, $index) as $_index => $_token) {
+                            if (!is_array($_token) && $_token === ';') {
+                                $collection[] = array_reduce(
+                                    array_slice($tokens, $index, $_index),
+                                    function ($carry, $item) {
+                                        if (is_array($item)) {
+                                            $item = $item[1];
+                                        }
+                                        return trim($carry .= $item);
+                                    }
+                                );
+                                continue 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach ($collection as $index => $entry) {
+                $collection[$index] = preg_replace_callback('/\\\\([a-z0-9\\\\]+)::class/i', function ($matches) {
+                    return '\''.str_replace('\\', '\\\\', $matches[1]).'\'';
+                }, $entry);
+            }
+
+            foreach ($collection as $index => $entry) {
+                if (preg_match('/attach\(\'(.+?)\',\'?(.+?)\'?,\[\$this,\'(.+?)\'/i', $entry, $match)) {
+                    $target = \str_replace('\\\\', '\\', $match[1]);
+
+                    $this->listenerCache[$target][$match[2]][] = $match[3];
+                }
+            }
+        }
+
+        if (isset($serviceData['listener']) && isset($this->listenerCache[$serviceData['listener']])) {
+            $service->setListeners($this->listenerCache[$serviceData['listener']]);
+        }
+
         if (isset($docsArray[$serviceClassName]['tags'])) {
             $tags = $docsArray[$serviceClassName]['tags'];
             if (!is_array($tags)) {
